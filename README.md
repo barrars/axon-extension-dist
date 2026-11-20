@@ -1,6 +1,6 @@
 # Evidence.com Data Aggregator — installable build
 
-Current build: **v2026.11.20.4**
+Current build: **v2026.11.20.5**
 
 This repository contains the **built extension only** — nothing else, and no case
 data. It is what the installer downloads and what the extension checks for updates.
@@ -67,8 +67,8 @@ before removing it.
   that toggle is turned off — if the extension suddenly disappears, that is why.
 - **Versions are dates:** `v2026.11.20` is a build from 20 Nov 2026; `v2026.11.20.2`
   is the third build released that day.
-- **Signing in is per browser profile.** The extension sees evidence.com pages in
-  the profile it is installed in.
+- **Signing in is per browser profile.** The extension sees evidence.com (and the
+  newer evidence.*.axon.com) pages in the profile it is installed in.
 - If Chrome says the folder is invalid, the download was probably incomplete —
   re-run the installer.
 

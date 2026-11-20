@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Evidence.com Data Aggregator",
-  "version": "2026.11.20.4",
-  "description": "Aggregate and enhance data from evidence.com review pages",
+  "version": "2026.11.20.5",
+  "description": "Aggregate and enhance data from evidence.com and axon.com review pages",
   "permissions": [
     "storage",
     "unlimitedStorage",
@@ -10,7 +10,8 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://*.evidence.com/*"
+    "https://*.evidence.com/*",
+    "https://*.axon.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -18,7 +19,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*.evidence.com/*"
+        "https://*.evidence.com/*",
+        "https://*.axon.com/*"
       ],
       "js": [
         "intercept.js"
@@ -28,7 +30,8 @@
     },
     {
       "matches": [
-        "https://*.evidence.com/*"
+        "https://*.evidence.com/*",
+        "https://*.axon.com/*"
       ],
       "js": [
         "content.js"
