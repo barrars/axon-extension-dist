@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Evidence.com Data Aggregator",
-  "version": "2026.11.20.2",
+  "version": "2026.11.20.3",
   "description": "Aggregate and enhance data from evidence.com review pages",
   "permissions": [
     "storage",
