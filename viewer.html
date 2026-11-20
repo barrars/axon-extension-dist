@@ -1,0 +1,440 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Evidence Aggregator — Viewer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="viewer-header">
+      <h1 class="viewer-title">Evidence Aggregator</h1>
+      <div class="viewer-toolbar">
+        <select
+          id="collection-select"
+          class="toolbar-select"
+          style="display: none"
+          tabindex="-1"
+          aria-hidden="true"
+        >
+          <option value="">Select a collection…</option>
+        </select>
+        <div id="case-selector-wrap" class="case-selector-wrap">
+          <div class="case-search-box">
+            <span class="case-search-icon" title="Search cases (Ctrl+K)">🔍</span>
+            <input
+              type="text"
+              id="case-search-input"
+              class="case-search-input"
+              placeholder="Search or select case… (Ctrl+K)"
+              title="Search cases by name or ID (Ctrl+K)"
+              disabled
+              autocomplete="off"
+              spellcheck="false"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="case-dropdown-list"
+              aria-autocomplete="list"
+            />
+            <button
+              type="button"
+              id="case-search-clear"
+              class="case-search-clear"
+              title="Clear search"
+              tabindex="-1"
+              style="display: none"
+            >✕</button>
+            <button
+              type="button"
+              id="case-dropdown-toggle"
+              class="case-dropdown-toggle"
+              title="Show all cases"
+              disabled
+            >▼</button>
+          </div>
+          <div
+            id="case-dropdown-list"
+            class="case-dropdown-list"
+            style="display: none"
+            role="listbox"
+          ></div>
+        </div>
+        <button
+          id="btn-rename"
+          class="toolbar-btn toolbar-btn-secondary"
+          title="Rename case / collection"
+          disabled
+        >
+          ✎
+        </button>
+        <span id="record-count" class="toolbar-stat"></span>
+        <input
+          type="text"
+          id="search-input"
+          class="toolbar-search"
+          placeholder="Filter records in case…"
+          disabled
+        />
+        <div class="toolbar-dropdown-wrap">
+          <button
+            id="btn-columns"
+            class="toolbar-btn toolbar-btn-secondary"
+            disabled
+          >
+            Columns
+          </button>
+          <div
+            id="column-dropdown"
+            class="column-dropdown"
+            style="display: none"
+          ></div>
+        </div>
+        <button id="btn-export-json" class="toolbar-btn" disabled>
+          Export JSON
+        </button>
+        <button id="btn-export-csv" class="toolbar-btn" disabled>
+          Export CSV
+        </button>
+        <button
+          id="btn-gallery"
+          class="toolbar-btn toolbar-btn-secondary"
+          disabled
+        >
+          Gallery
+        </button>
+        <button
+          id="btn-timeline"
+          class="toolbar-btn toolbar-btn-secondary"
+          disabled
+        >
+          Timeline
+        </button>
+        <button
+          id="btn-folders"
+          class="toolbar-btn toolbar-btn-secondary"
+          disabled
+        >
+          Folders
+        </button>
+        <button id="btn-delete" class="toolbar-btn toolbar-btn-danger" disabled>
+          Delete
+        </button>
+        <button
+          id="btn-logs"
+          class="toolbar-btn toolbar-btn-secondary"
+          title="View diagnostic logs"
+        >
+          Logs
+        </button>
+        <button
+          id="btn-theme"
+          class="toolbar-btn toolbar-btn-secondary"
+          title="Toggle light/dark mode"
+        >
+          ☀
+        </button>
+      </div>
+    </header>
+
+    <div id="stats-bar" class="stats-bar" style="display: none"></div>
+    <div id="case-match-banner" class="case-match-banner" style="display: none"></div>
+
+    <div id="table-container" class="table-container">
+      <div id="empty-state" class="empty-state">
+        <p>No data loaded. Start aggregating on an evidence.com review page.</p>
+      </div>
+      <table id="data-table" class="data-table" style="display: none">
+        <thead id="table-head"></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div id="gallery-view" style="display: none"></div>
+      <div id="timeline-view" style="display: none"></div>
+      <div id="folder-view" style="display: none"></div>
+    </div>
+
+    <div
+      id="thumbnail-preview"
+      style="
+        display: none;
+        position: fixed;
+        z-index: 99998;
+        pointer-events: none;
+        border-radius: 8px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      "
+    >
+      <img
+        id="thumbnail-preview-img"
+        src=""
+        style="width: 300px; height: 200px; object-fit: cover; display: block"
+      />
+    </div>
+
+    <div
+      id="sync-player-overlay"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        flex-direction: column;
+        background: rgba(11, 17, 32, 0.96);
+        z-index: 99999;
+      "
+    >
+      <div
+        id="sync-player-toolbar"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 16px;
+          background: #0f172a;
+          border-bottom: 1px solid #1e293b;
+          flex-shrink: 0;
+          flex-wrap: wrap;
+        "
+      >
+        <div id="sync-player-controls-left" style="display: flex; align-items: center; gap: 6px">
+          <button
+            id="sync-player-close"
+            title="Close Video Review (Esc)"
+            style="
+              background: none;
+              border: none;
+              color: #94a3b8;
+              font-size: 16px;
+              cursor: pointer;
+              padding: 4px 8px;
+              border-radius: 4px;
+            "
+          >
+            &#10005;
+          </button>
+          <button
+            id="sync-player-dock-toggle"
+            title="Toggle Docked Split-Screen vs Fullscreen"
+            style="
+              background: #1e293b;
+              border: 1px solid #334155;
+              color: #cbd5e1;
+              padding: 5px 10px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 11px;
+            "
+          >
+            &#11036; Dock
+          </button>
+          <button
+            id="sync-player-step-back"
+            title="Step back 5s (Left Arrow)"
+            style="
+              background: #1e293b;
+              border: 1px solid #334155;
+              color: #cbd5e1;
+              padding: 5px 10px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 11px;
+            "
+          >
+            -5s
+          </button>
+          <button
+            id="sync-player-play"
+            title="Play / Pause active videos (Space)"
+            style="
+              background: #0284c7;
+              border: 1px solid #38bdf8;
+              color: #ffffff;
+              padding: 6px 14px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 12px;
+              font-weight: 600;
+              min-width: 96px;
+            "
+          >
+            &#9654; Play
+          </button>
+          <button
+            id="sync-player-step-fwd"
+            title="Step forward 5s (Right Arrow)"
+            style="
+              background: #1e293b;
+              border: 1px solid #334155;
+              color: #cbd5e1;
+              padding: 5px 10px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 11px;
+            "
+          >
+            +5s
+          </button>
+        </div>
+        <div
+          id="sync-player-clock-wrap"
+          style="
+            display: flex;
+            flex-direction: column;
+            min-width: 195px;
+            background: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 3px 10px;
+          "
+        >
+          <span
+            id="sync-player-realclock"
+            style="
+              color: #38bdf8;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.02em;
+            "
+            >--:--:--</span
+          >
+          <span
+            id="sync-player-time"
+            style="color: #64748b; font-size: 10px; font-family: ui-monospace, monospace"
+            >00:00 / 00:00</span
+          >
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 180px">
+          <input
+            type="range"
+            id="sync-player-scrubber"
+            style="width: 100%; accent-color: #38bdf8; cursor: pointer"
+            min="0"
+            max="10000"
+            value="0"
+          />
+          <div id="sync-player-minimap" style="height: 6px; width: 100%; background: #1e293b; border-radius: 3px; position: relative; overflow: hidden"></div>
+        </div>
+        <span
+          id="sync-player-active-badge"
+          style="
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            white-space: nowrap;
+          "
+          >0 active</span
+        >
+        <button
+          id="sync-player-slower"
+          title="Slower playback"
+          style="
+            background: none;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+          "
+        >
+          &#9664;&#9664;
+        </button>
+        <span id="sync-player-speed" style="color: #cbd5e1; font-size: 11px; min-width: 28px; text-align: center"
+          >1x</span
+        >
+        <button
+          id="sync-player-faster"
+          title="Faster playback"
+          style="
+            background: none;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+          "
+        >
+          &#9654;&#9654;
+        </button>
+      </div>
+      <div
+        id="sync-player-grid"
+        style="flex: 1; display: grid; gap: 8px; padding: 10px; overflow-y: auto"
+      ></div>
+    </div>
+
+    <div
+      id="logs-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 99999;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: #1e293b;
+          border: 1px solid #334155;
+          border-radius: 8px;
+          width: 90%;
+          max-width: 860px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid #334155;
+            background: #0f172a;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="font-size: 13px; font-weight: 600; color: #38bdf8; margin: 0;">
+              System Diagnostics &amp; Scrape Logs
+            </h3>
+            <span id="logs-count-badge" style="background: #334155; color: #94a3b8; font-size: 11px; padding: 1px 6px; border-radius: 10px;">0 entries</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-copy-logs" class="toolbar-btn toolbar-btn-secondary" style="padding: 4px 10px; font-size: 11px;">Copy Logs</button>
+            <button id="btn-clear-logs" class="toolbar-btn toolbar-btn-danger" style="padding: 4px 10px; font-size: 11px;">Clear</button>
+            <button id="btn-close-logs" class="toolbar-btn toolbar-btn-secondary" style="padding: 4px 10px; font-size: 11px;">✕</button>
+          </div>
+        </div>
+        <div
+          id="logs-content"
+          style="
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            background: #0b1120;
+            color: #94a3b8;
+          "
+        >Loading logs…</div>
+      </div>
+    </div>
+
+    <script src="hls.min.js"></script>
+    <script src="viewer.js"></script>
+  </body>
+</html>

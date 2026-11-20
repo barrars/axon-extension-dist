@@ -1,0 +1,241 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        width: 280px;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        font-size: 13px;
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 16px;
+      }
+      .header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      h1 {
+        font-size: 15px;
+        color: #38bdf8;
+      }
+      .version {
+        appearance: none;
+        background: none;
+        border: none;
+        padding: 0;
+        width: auto;
+        flex: 0 0 auto;
+        font-size: 10px;
+        font-weight: 600;
+        font-family: inherit;
+        color: #64748b;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .version:hover {
+        color: #38bdf8;
+        text-decoration: underline;
+      }
+      .version.checking {
+        opacity: 0.5;
+      }
+      .update-banner {
+        display: none;
+        margin-bottom: 14px;
+        padding: 10px;
+        border: 1px solid #0ea5e9;
+        border-radius: 6px;
+        background: rgba(56, 189, 248, 0.08);
+      }
+      .update-banner .update-headline {
+        font-size: 12px;
+        font-weight: 600;
+        color: #38bdf8;
+        margin-bottom: 6px;
+      }
+      .update-banner button {
+        margin: 0 0 6px;
+      }
+      .update-hint {
+        font-size: 10px;
+        line-height: 1.4;
+        color: #94a3b8;
+      }
+      .update-note {
+        display: none;
+        margin-bottom: 12px;
+        font-size: 11px;
+        color: #64748b;
+      }
+      .update-note.error {
+        color: #f87171;
+      }
+      .section {
+        margin-bottom: 14px;
+      }
+      .label {
+        color: #64748b;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+      .value {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      button {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: background 0.15s;
+      }
+      .btn-primary {
+        background: #38bdf8;
+        color: #0f172a;
+      }
+      .btn-primary:hover {
+        background: #7dd3fc;
+      }
+      .btn-danger {
+        background: #ef4444;
+        color: #fff;
+      }
+      .btn-danger:hover {
+        background: #f87171;
+      }
+      .btn-secondary {
+        background: #334155;
+        color: #e2e8f0;
+      }
+      .btn-secondary:hover {
+        background: #475569;
+      }
+      .status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .status-dot.idle {
+        background: #64748b;
+      }
+      .status-dot.active {
+        background: #22c55e;
+        animation: pulse 1.5s infinite;
+      }
+      .status-dot.done {
+        background: #38bdf8;
+      }
+      .status-dot.error {
+        background: #ef4444;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #1e293b;
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Evidence Aggregator</h1>
+      <button type="button" class="version" id="version_text" title="Check for updates">v—</button>
+    </div>
+    <div class="update-banner" id="update_banner">
+      <div class="update-headline"><span id="update_version">—</span> is available</div>
+      <button type="button" id="btn_update" class="btn-primary">Download update</button>
+      <div class="update-hint">
+        Unzip it over the extension folder, then click Reload on
+        chrome://extensions. Or run update-extension.sh.
+      </div>
+    </div>
+    <div class="update-note" id="update_note"></div>
+    <div class="section">
+      <div class="label">Status</div>
+      <div class="value" id="status_text">
+        <span class="status-dot idle"></span> Idle
+      </div>
+    </div>
+    <div id="progress_section" class="section" style="display: none">
+      <div class="label">Progress</div>
+      <div class="value" id="progress_text">-</div>
+    </div>
+    <hr />
+    <div class="section">
+      <div class="label">Volume Boost</div>
+      <div style="display: flex; gap: 6px; align-items: center">
+        <button
+          id="btn_vol_down"
+          class="btn-secondary"
+          style="width: auto; padding: 6px 10px; margin: 0; font-size: 14px"
+          title="Reduce gain"
+        >
+          −
+        </button>
+        <span
+          id="vol_display"
+          style="flex: 1; text-align: center; font-weight: 600"
+          >1×</span
+        >
+        <button
+          id="btn_vol_up"
+          class="btn-secondary"
+          style="width: auto; padding: 6px 10px; margin: 0; font-size: 14px"
+          title="Increase gain"
+        >
+          +
+        </button>
+        <button
+          id="btn_vol_apply"
+          class="btn-primary"
+          style="width: auto; padding: 6px 10px; margin: 0"
+        >
+          Apply
+        </button>
+      </div>
+    </div>
+    <hr />
+    <button id="btn_open" class="btn-primary">Open Viewer</button>
+    <button id="btn_logs" class="btn-secondary">Diagnostics &amp; Logs</button>
+    <div id="logs_container" style="display: none; margin-bottom: 8px;">
+      <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+        <button id="btn_copy_logs" class="btn-secondary" style="flex: 1; margin: 0; padding: 4px 8px; font-size: 11px;">Copy Logs</button>
+        <button id="btn_clear_logs" class="btn-danger" style="flex: 1; margin: 0; padding: 4px 8px; font-size: 11px;">Clear</button>
+      </div>
+      <div id="logs_preview" style="font-family: monospace; font-size: 10px; line-height: 1.4; max-height: 120px; overflow-y: auto; background: #020617; border: 1px solid #1e293b; border-radius: 4px; padding: 6px; color: #94a3b8; white-space: pre-wrap;"></div>
+    </div>
+    <button id="btn_clear" class="btn-danger">Clear All Data</button>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
