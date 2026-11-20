@@ -609,9 +609,13 @@ async function clearAllData () {
 //   chrome.storage.local.set({ axon_update_feed: { manifestUrl, downloadUrl, repoUrl } })
 const UPDATE_DIST_REPO = 'barrars/axon-extension-dist'
 const UPDATE_DIST_BRANCH = 'main'
+// GitHub's branch archives are CDN-cached and can still serve the previous
+// build for a few minutes after a publish, so the download prefers the
+// per-release tag archive, which is immutable.
 const UPDATE_FEED_DEFAULTS = {
   manifestUrl: 'https://raw.githubusercontent.com/' + UPDATE_DIST_REPO + '/' + UPDATE_DIST_BRANCH + '/manifest.json',
   downloadUrl: 'https://github.com/' + UPDATE_DIST_REPO + '/archive/refs/heads/' + UPDATE_DIST_BRANCH + '.zip',
+  tagDownloadUrl: 'https://github.com/' + UPDATE_DIST_REPO + '/archive/refs/tags/v{version}.zip',
   repoUrl: 'https://github.com/' + UPDATE_DIST_REPO
 }
 const UPDATE_CACHE_KEY = 'axon_update_check'
@@ -625,7 +629,7 @@ async function getUpdateConfig () {
     const stored = await chrome.storage.local.get(UPDATE_FEED_KEY)
     const custom = stored && stored[UPDATE_FEED_KEY]
     if (custom && typeof custom === 'object') {
-      ['manifestUrl', 'downloadUrl', 'repoUrl'].forEach(function (field) {
+      ['manifestUrl', 'downloadUrl', 'tagDownloadUrl', 'repoUrl'].forEach(function (field) {
         if (typeof custom[field] === 'string' && custom[field]) config[field] = custom[field]
       })
     }
@@ -668,6 +672,11 @@ async function fetchLatestVersion (manifestUrl) {
   }
 }
 
+function downloadUrlFor (config, latest) {
+  if (latest && config.tagDownloadUrl) return config.tagDownloadUrl.replace('{version}', latest)
+  return config.downloadUrl
+}
+
 function buildUpdateStatus (config, current, latest, checkedAt, error) {
   return {
     ok: !error,
@@ -676,7 +685,7 @@ function buildUpdateStatus (config, current, latest, checkedAt, error) {
     latest: latest || null,
     checkedAt: checkedAt || null,
     updateAvailable: !!(latest && compareVersions(latest, current) > 0),
-    downloadUrl: config.downloadUrl,
+    downloadUrl: downloadUrlFor(config, latest),
     repoUrl: config.repoUrl
   }
 }

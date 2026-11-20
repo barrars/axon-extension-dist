@@ -9,8 +9,14 @@
 # Chrome profile, never in this folder, so updating cannot touch your data.
 set -euo pipefail
 
-ARCHIVE="${AXON_INSTALL_URL:-https://github.com/barrars/axon-extension-dist/archive/refs/heads/main.zip}"
+DIST_REPO="barrars/axon-extension-dist"
+DIST_BRANCH="main"
 TARGET="${AXON_INSTALL_DIR:-$HOME/AxonExtension}"
+ARCHIVE="${AXON_INSTALL_URL:-}"
+ARCHIVE_EXPLICIT=$([ -n "${AXON_INSTALL_URL:-}" ] && echo 1 || echo 0)
+
+tag_archive () { echo "https://github.com/$DIST_REPO/archive/refs/tags/v$1.zip"; }
+branch_archive () { echo "https://github.com/$DIST_REPO/archive/refs/heads/$DIST_BRANCH.zip"; }
 
 usage () {
   cat <<'EOF'
@@ -26,7 +32,7 @@ EOF
 while [ $# -gt 0 ]; do
   case "$1" in
     --dir) TARGET="$2"; shift 2 ;;
-    --url) ARCHIVE="$2"; shift 2 ;;
+    --url) ARCHIVE="$2"; ARCHIVE_EXPLICIT=1; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "error: unknown argument $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -54,8 +60,28 @@ fi
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# Prefer the immutable per-release tag archive: GitHub's branch archive is
+# CDN-cached and can still hand out the previous build just after a publish.
+if [ "$ARCHIVE_EXPLICIT" = "0" ]; then
+  ARCHIVE="$(branch_archive)"
+  MANIFEST_JSON="$(curl -fsSL "https://raw.githubusercontent.com/$DIST_REPO/$DIST_BRANCH/manifest.json" 2>/dev/null || true)"
+  if [ -n "$MANIFEST_JSON" ]; then
+    LATEST_TAG_VERSION="$(printf '%s' "$MANIFEST_JSON" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | sed -n '1p')"
+    if [ -n "$LATEST_TAG_VERSION" ]; then
+      ARCHIVE="$(tag_archive "$LATEST_TAG_VERSION")"
+      echo "Latest published build: v$LATEST_TAG_VERSION"
+    fi
+  fi
+fi
+
 echo "Downloading latest build..."
 HTTP_CODE="$(curl -sSL -o "$TMP_DIR/build.zip" -w '%{http_code}' "$ARCHIVE" || true)"
+# A publish whose tag push failed leaves no tag archive; fall back to the branch.
+if [ "$HTTP_CODE" != "200" ] && [ "$ARCHIVE_EXPLICIT" = "0" ] && [ "$ARCHIVE" != "$(branch_archive)" ]; then
+  echo "note: no by-tag archive for v${LATEST_TAG_VERSION:-current}, falling back to $DIST_BRANCH" >&2
+  ARCHIVE="$(branch_archive)"
+  HTTP_CODE="$(curl -sSL -o "$TMP_DIR/build.zip" -w '%{http_code}' "$ARCHIVE" || true)"
+fi
 if [ "$HTTP_CODE" != "200" ]; then
   echo "error: download failed (HTTP $HTTP_CODE) from $ARCHIVE" >&2
   exit 1

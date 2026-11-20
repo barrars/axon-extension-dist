@@ -1,6 +1,6 @@
 # Evidence.com Data Aggregator — installable build
 
-Current build: **v2026.11.20.3**
+Current build: **v2026.11.20.4**
 
 This repository contains the **built extension only** — nothing else, and no case
 data. It is what the installer downloads and what the extension checks for updates.
